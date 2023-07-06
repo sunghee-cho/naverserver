@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="board.spring.mybatis.BoardDAO" >
+
+<insert id="insertBoard" parameterType="boarddto" >
+ insert into board(title, contents, writer, pw, viewcount, writingtime) 
+ values(#{title}, #{contents}, #{writer}, #{pw}, 0, now())
+</insert>
+ 
+<select id="getTotalBoard" resultType="int" >
+	select count(*) from board
+</select>
+
+<select id="boardList" resultType="boarddto" parameterType="int">
+ select * from board order by writingtime desc limit 
+ <foreach collection="array" item="num" separator=",">
+ #{num}
+ </foreach>
+</select>
+
+<update id="updateViewcount" parameterType="int">
+ update board set viewcount = viewcount+1 where seq=#{seq} 
+</update>
+
+<select id="getDetail" resultType="boarddto" parameterType="int">
+select * from board  where seq=#{seq} 
+</select>
+
+<!-- 해당 글 작성자는 1명 : 1-1매핑: association -->
+<!-- 1-n 매핑시 collection 으로 변경 :association -->
+<resultMap type="board.spring.mybatis.BoardMemberDTO" id="writerMap">
+<id property="seq" column="seq"/>
+<result property="title" column="title" />
+<result property="contents" column="contents" />
+<result property="pw" column="b_pw" />
+<result property="viewcount" column="viewcount" />
+<result property="writingtime" column="writingtime" />
+<association property="member" resultMap="memberMap" />
+</resultMap>
+
+<resultMap type="board.spring.mybatis.MemberDTO" id="memberMap">
+<id property="memberid" column="memberid"/>
+<result property="name" column="name" />
+<result property="pw" column="m_pw" />
+<result property="phone" column="phone" />
+<result property="email" column="email" />
+<result property="regtime" column="regtime" />
+</resultMap>
+
+<select id="getWriterInform" resultMap="writerMap" parameterType="int">
+select seq, title, contents, memberid, name, email, phone, b.pw as b_pw, m.pw as m_pw
+from board b inner join c_member m 
+on writer = memberid
+where seq=#{seq}
+</select>
+
+<!--  -->
+<select id="searchList" resultType="boarddto" parameterType="hashmap">
+
+ select * from board where 
+ 	<choose>
+	 <when test="colname == null" >
+	  title like #{colvalue} or contents like #{colvalue} or writer like #{colvalue}
+	 </when>
+	<otherwise>
+	${colname} like #{colvalue}
+	</otherwise>
+	</choose>
+ order by writingtime desc
+ limit
+
+ 
+</select>
+</mapper>
+
+
+
+
+
+
